@@ -8,6 +8,8 @@ import './App.css';
  */
 interface IState {
   data: ServerRespond[],
+  // Create a boolean to control when to show the graph
+  showGraph: boolean,
 }
 
 /**
@@ -22,6 +24,10 @@ class App extends Component<{}, IState> {
       // data saves the server responds.
       // We use this state to parse data down to the child element (Graph) as element property
       data: [],
+      // Set the initial state of showGraph to false so that the graph is not shown to the 
+      // User until the state of showGraph is changed to true via the getDataFromServer function
+      // Which will only fire when the user clicks 'Start Streaming Data'.
+      showGraph: false,
     };
   }
 
@@ -29,18 +35,41 @@ class App extends Component<{}, IState> {
    * Render Graph react component with state.data parse as property data
    */
   renderGraph() {
-    return (<Graph data={this.state.data}/>)
+    // Only render the graph when the user clicks 'Start Streaming Data'. The "Graph" div is always 
+    // On the page once the page loads. To make sure the graph itself is only displayed when the user clicks on 
+    // 'Start Streaming Data', renderGraph ONLY returns a graph if the showGraph boolean is true. 
+    // Since the showGraph boolean is made true by calling the getDataFromServer function. The renderGraph will 
+    // Only fire when the user clicks 'Start Streaming Data' which calls the getDataFromServer function.
+    if (this.state.showGraph) {
+      return (<Graph data={this.state.data}/>)
+    }
   }
 
   /**
    * Get new data from server and update the state with the new data
    */
   getDataFromServer() {
-    DataStreamer.getData((serverResponds: ServerRespond[]) => {
-      // Update the state by creating a new array of data that consists of
-      // Previous data in the state and the new data from server
-      this.setState({ data: [...this.state.data, ...serverResponds] });
-    });
+    // Implement a counter 
+    let x = 0;
+    // Use the setInterval method to repeat getData function at 100 millisecond intervals (see line 68) 
+    const interval = setInterval(() => {
+      DataStreamer.getData((serverResponds: ServerRespond[]) => {
+        // Update the state by creating a new array of data that consists of
+        // Previous data in the state and the new data from server
+        this.setState({ 
+          data: serverResponds,
+          // Set showGraph to true so that the graph appears
+          showGraph: true,
+        });
+      });
+      // Increment counter
+      x++;
+      // stop counter
+      if  (x > 1000) {
+        clearInterval(interval);
+      }
+    }, 100);
+    
   }
 
   /**
